@@ -256,7 +256,7 @@ def cut(
         bins = Index(bins)
         if not bins.is_monotonic_increasing:
             raise ValueError("bins must increase monotonically.")
-
+    
     fac, bins = _bins_to_cuts(
         x_idx,
         bins,
@@ -274,11 +274,13 @@ def cut(
 def qcut(
     x,
     q,
+    right: bool = True,
     labels=None,
     retbins: bool = False,
     precision: int = 3,
     duplicates: str = "raise",
 ):
+    
     """
     Quantile-based discretization function.
 
@@ -292,6 +294,8 @@ def qcut(
     q : int or list-like of float
         Number of quantiles. 10 for deciles, 4 for quartiles, etc. Alternately
         array of quantiles, e.g. [0, .25, .5, .75, 1.] for quartiles.
+    right: bool, default True
+        Indicates whether `bins` includes the rightmost edge or not.
     labels : array or False, default None
         Used as labels for the resulting bins. Must be of the same length as
         the resulting bins. If False, return only integer indicators of the
@@ -338,11 +342,12 @@ def qcut(
 
     quantiles = np.linspace(0, 1, q + 1) if is_integer(q) else q
 
-    bins = x_idx.to_series().dropna().quantile(quantiles)
+    bins = _nbins_to_bins(x_idx, q, right)    
 
     fac, bins = _bins_to_cuts(
         x_idx,
         Index(bins),
+        right=right,
         labels=labels,
         precision=precision,
         include_lowest=True,
@@ -388,7 +393,7 @@ def _nbins_to_bins(x_idx: Index, nbins: int, right: bool) -> Index:
         else:
             mn -= 0.001 * abs(mn) if mn != 0 else 0.001
             mx += 0.001 * abs(mx) if mx != 0 else 0.001
-
+            
             bins = np.linspace(mn, mx, nbins + 1, endpoint=True)
     else:  # adjust end points after binning
         if _is_dt_or_td(x_idx.dtype):
@@ -404,12 +409,13 @@ def _nbins_to_bins(x_idx: Index, nbins: int, right: bool) -> Index:
             )
         else:
             bins = np.linspace(mn, mx, nbins + 1, endpoint=True)
+         
         adj = (mx - mn) * 0.001  # 0.1% of the range
         if right:
             bins[0] -= adj
         else:
             bins[-1] += adj
-
+    
     return Index(bins)
 
 
