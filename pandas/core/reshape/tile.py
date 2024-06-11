@@ -274,6 +274,7 @@ def cut(
 def qcut(
     x,
     q,
+    right: bool = True,
     labels=None,
     retbins: bool = False,
     precision: int = 3,
@@ -293,6 +294,8 @@ def qcut(
     q : int or list-like of float
         Number of quantiles. 10 for deciles, 4 for quartiles, etc. Alternately
         array of quantiles, e.g. [0, .25, .5, .75, 1.] for quartiles.
+    right: bool, default True
+        Indicates wheter `bins` includes the rightmost edge or not.
     labels : array or False, default None
         Used as labels for the resulting bins. Must be of the same length as
         the resulting bins. If False, return only integer indicators of the
@@ -344,11 +347,12 @@ def qcut(
 
     quantiles = np.linspace(0, 1, q + 1) if is_integer(q) else q
 
-    bins = x_idx.to_series().dropna().quantile(quantiles)
+    bins = _nbins_to_bins(x_idx, q, right)
 
     fac, bins = _bins_to_cuts(
         x_idx,
         Index(bins),
+        right=right,
         labels=labels,
         precision=precision,
         include_lowest=True,
